@@ -5,15 +5,16 @@ from jsonrpc import JSONRPCResponseManager, dispatcher
 from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 
-import backends.llama.model as llama_model
-import backends.openai.model as openai_model
+import backends.llama.api as llama_api
+import backends.openai.api as openai_api
 
 logger = logging.getLogger("emaics-server")
 logger.setLevel(logging.DEBUG)
 
-AVAILABLE_BACKENDS = dict(llama=llama_model, openai=openai_model)
+AVAILABLE_BACKENDS = dict(llama=llama_api, openai=openai_api)
 
 BACKEND = None
+
 
 
 @dispatcher.add_method
@@ -35,7 +36,7 @@ if __name__ == "__main__":
         "-b",
         "--backend",
         choices=AVAILABLE_BACKENDS,
-        default=AVAILABLE_BACKENDS["openai"],
+        default="openai"
     )
     parser.add_argument(
         "-k", "--api-key", 

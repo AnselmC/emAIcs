@@ -12,14 +12,6 @@ DEFAULT_LLAMA_WEIGHTS = "huggyllama/llama-7b"
 DEFAULT_LORA_WEIGHTS = "tloen/alpaca-lora-7b"
 
 
-@dataclass
-class User:
-    first_name: str
-    last_name: str
-
-
-def print_username(user: User) -> str:
-    pass
 
 
 def _get_device() -> str:
