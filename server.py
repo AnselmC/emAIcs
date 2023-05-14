@@ -4,7 +4,7 @@ from jsonrpc import JSONRPCResponseManager, dispatcher
 from werkzeug.serving import run_simple
 from werkzeug.wrappers import Request, Response
 
-from models.alpaca_lora.model import get_response_for_prompt
+from models.llama.model import get_response_for_prompt
 
 logger = logging.getLogger("emaics-server")
 logger.setLevel(logging.DEBUG)
