@@ -80,6 +80,11 @@
 (defconst emaics--pkg-directory (file-name-directory (or load-file-name buffer-file-name)))
 
 
+(defun emaics--get-api-key()
+  "Get API key for backend (necessary for openai)."
+  (getenv "EMAICS_BACKEND_API_KEY"))
+
+
 ;;;###autoload
 (defun emaics-start-server ()
   "Start the emAIcs server if it hasn't started yet."
@@ -87,15 +92,16 @@
   (if (not emaics--server)
       (progn
         (message "Starting emAIcs server...")
-                 (setq emaics--server-buffer (get-buffer-create emaics--server-buffer-name))
-                 (with-current-buffer emaics--server-buffer
-                   (erase-buffer)
-                   (setq emaics--server (make-process
-                                         :name "emaics-server"
-                                         :buffer emaics--server-buffer
-                                         :connection-type 'pipe
-                                         :command `("python" ,(expand-file-name "server.py" emaics--pkg-directory))))
-                   ))
+        (setq emaics--server-buffer (get-buffer-create emaics--server-buffer-name))
+        (with-current-buffer emaics--server-buffer
+          (erase-buffer)
+          (setq emaics--server (make-process
+                                :name "emaics-server"
+                                :buffer emaics--server-buffer
+                                :connection-type 'pipe
+                                :command `("python"
+                                           ,(expand-file-name "server.py" emaics--pkg-directory)
+                                           (concat "--api-key" ,(emaics--get-api-key)))))))
     (message "Server already running!")))
 
 

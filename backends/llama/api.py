@@ -12,6 +12,16 @@ DEFAULT_LLAMA_WEIGHTS = "huggyllama/llama-7b"
 DEFAULT_LORA_WEIGHTS = "tloen/alpaca-lora-7b"
 
 
+@dataclass
+class User:
+    first_name: str
+    last_name: str
+
+
+def print_username(user: User) -> str:
+    pass
+
+
 def _get_device() -> str:
     if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         return "cpu"  # "mps"
@@ -86,8 +96,10 @@ class GenerationParams:
 
 
 def get_response_for_prompt(
-    prompt: str, buffer: str, generation_params: GenerationParams = GenerationParams()
+    prompt: str,
+    buffer: str,
 ) -> str:
+    generation_params: GenerationParams = GenerationParams()
     device = _get_device()
     tokenizer, model = _get_tokenizer_and_model(device=device)
 
@@ -117,3 +129,7 @@ def get_response_for_prompt(
         output = tokenizer.decode(s)
         return output.split("### Response:\n")[-1].replace("</s>", "")
     raise NotImplementedError("")
+
+
+def set_api_key(key: str) -> None:
+    _ = key
