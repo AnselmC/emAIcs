@@ -115,6 +115,5 @@ def get_response_for_prompt(
             generation_output = model.generate(**generate_params)
         s = generation_output.sequences[0]
         output = tokenizer.decode(s)
-        return output.split("### Response:\n")[-1]
-    else:
-        raise NotImplementedError("")
+        return output.split("### Response:\n")[-1].replace("</s>", "")
+    raise NotImplementedError("")

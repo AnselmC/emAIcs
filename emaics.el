@@ -20,9 +20,9 @@
   "Display RESULT for RESPONSE-REQUEST-ID from emaics server in dedicated buffer."
   (let ((buffer (get-buffer-create emaics--client-buffer-name)))
     (switch-to-buffer-other-window buffer)
-    (erase-buffer)
     (setq emaics--client-buffer buffer)
-    (insert (format "Result for request id %s:\n%s" response-request-id result))))
+    (goto-char (point-max))
+    (insert (format "\nResult for request id %s:\n%s" response-request-id result))))
 
 
 (cl-defun emaics--handle-success (&key response &allow-other-keys)
@@ -86,7 +86,7 @@
   (interactive)
   (if (not emaics--server)
       (progn
-        (message "Starting emAIcs server..."
+        (message "Starting emAIcs server...")
                  (setq emaics--server-buffer (get-buffer-create emaics--server-buffer-name))
                  (with-current-buffer emaics--server-buffer
                    (erase-buffer)
@@ -95,7 +95,7 @@
                                          :buffer emaics--server-buffer
                                          :connection-type 'pipe
                                          :command `("python" ,(expand-file-name "server.py" emaics--pkg-directory))))
-                   )))
+                   ))
     (message "Server already running!")))
 
 
