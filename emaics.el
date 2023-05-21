@@ -55,7 +55,6 @@
   (let ((buffer (get-buffer-create emaics--client-buffer-name))
         (formatted-result (emaics--wrap-inside-org-src-block result lang)))
     (with-current-buffer buffer
-      (message "hello")
       (switch-to-buffer-other-window buffer)
       (org-mode)
       (setq emaics--client-buffer buffer)
@@ -172,16 +171,15 @@
 
 
 ;;;###autoload
-(defun emaics-execute-prompt-on-region ()
-  "Send prompt with active region to emaics server."
+(defun emaics-execute-prompt ()
+  "Send prompt with current line or active region to emaics server."
   (interactive)
-  (if (use-region-p)
-      (let* ((bounds (cons (region-beginning) (region-end)))
-             (buffer (buffer-substring-no-properties (car bounds) (cdr bounds)))
-             (lang (emaics--get-language-string-for-major-mode))
-             (prompt (emaics--ask-user-for-prompt)))
-        (emaics--send-request-to-server "execute_prompt" `(("prompt" . ,prompt) ("buffer" . ,buffer)) lang))
-    (message "Select a region before calling `emaics-execute-prompt-on-region'")))
+  (let* ((bounds (if (use-region-p) (cons (region-beginning) (region-end))
+                   (bounds-of-thing-at-point 'line)))
+         (buffer (buffer-substring-no-properties (car bounds) (cdr bounds)))
+         (lang (emaics--get-language-string-for-major-mode))
+         (prompt (emaics--ask-user-for-prompt)))
+    (emaics--send-request-to-server "execute_prompt" `(("prompt" . ,prompt) ("buffer" . ,buffer)) lang)))
 
-(provide 'emaics)
+  (provide 'emaics)
 ;;; emaics.el ends here
