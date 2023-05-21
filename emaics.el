@@ -181,5 +181,5 @@
          (prompt (emaics--ask-user-for-prompt)))
     (emaics--send-request-to-server "execute_prompt" `(("prompt" . ,prompt) ("buffer" . ,buffer)) lang)))
 
-  (provide 'emaics)
+(provide 'emaics)
 ;;; emaics.el ends here
