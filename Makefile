@@ -9,7 +9,7 @@ YELLOW := "\e[1;33m"
 NC := "\e[0m"
 INFO := @bash -c 'printf $(YELLOW); echo "=> $$1"; printf $(NC)' MESSAGE
 
-POETRY_EXEC := $(shell command -v poetry || command -v ${HOME}/.local/bin/poetry)
+POETRY_EXEC := $(shell command -v ${HOME}/.local/bin/poetry || command -v poetry)
 
 .PHONY: help
 help: ## Show this help
@@ -20,12 +20,12 @@ help: ## Show this help
 install-server: ## install the emAIcs server. Requires python3 executable in path.
 ifdef POETRY_EXEC 
 	${INFO} "Installing dependencies..."
-	${POETRY_EXEC} install
+	${POETRY_EXEC} install --without dev
 else
 	${INFO} "Poetry not found. Installing..."
 	curl -sSL https://install.python-poetry.org | python3 -
 	${INFO} "Installing dependencies..."
-    ${HOME}/.local/bin/poetry install
+    ${HOME}/.local/bin/poetry install --without dev
 endif
 
 

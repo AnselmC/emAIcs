@@ -6,7 +6,22 @@
 (require 'request)
 
 ;;; Custom variables
-(defcustom emaics-api-key "" "Set the API key for the emAIcs backend, i.e. OpenAI.")
+(defcustom emaics-api-key ""
+  "Set the API key for the emAIcs backend, i.e. OpenAI."
+  :group 'emaics
+  :type 'string)
+
+(defcustom emaics-server-port 4000
+  "Set the port that you want the emAIcs server to run on."
+  :group 'emaics
+  :type 'integer)
+
+(defcustom emaics-server-backend "openai"
+  "Set the GPT backend you'd like to use for emAIcs."
+  :group 'emaics
+  :type 'string
+  :options '("openai" "llama"))
+
 
 ;; Constant variables
 (defconst emaics--client-buffer-name "*emAIcs*")
@@ -80,12 +95,12 @@
 (defun emaics--send-request-to-server (method-name params lang)
   "Send request to LLM server for METHOD-NAME with PARAMS."
   (let* ((server-url "http://localhost")
-         (server-port "4000")
          (data (json-encode `(("method" . ,method-name)
                               ("id" . ,emaics--request-id)
                               ("jsonrpc" . "2.0")
                               ("params" . ,params))))
-         (request-url (concat server-url ":" server-port)))
+         (request-url (concat server-url ":" (number-to-string
+                                              (emaics-server-port)))))
     (progn
       (emaics--increment-request-id)
       (request request-url
@@ -112,21 +127,33 @@
     prompt))
 
 
-(defun emaics--server-installed-p ()
-  )
+(defun emaics--server-installed-p ())
+
+(defun emaics--ansi-color-filter (proc string)
+  (when (buffer-live-p (process-buffer proc))
+    (with-current-buffer (process-buffer proc)
+      (let ((moving (= (point) (process-mark proc))))
+        (save-excursion
+          ;; Insert the text, advancing the process marker.
+          (goto-char (process-mark proc))
+          (insert (ansi-color-apply string))
+          (set-marker (process-mark proc) (point)))
+        (if moving (goto-char (process-mark proc)))))))
 
 ;;;###autoload
-(defun emaics-install-server()
+(defun emaics-install-server ()
+  "Install the emAIcs server."
   (interactive)
-  (let ((default-direcotry emaics--pkg-directory)
+  (let ((default-directory emaics--pkg-directory)
         (install-buffer (get-buffer-create "*emAIcs install server*")))
     (with-current-buffer install-buffer
+      (switch-to-buffer-other-window install-buffer)
       (make-process
        :name "emaics-install-server"
        :buffer install-buffer
        :connection-type 'pipe
-       :command '("make" "install-server")))))
-
+       :command '("make" "install-server")
+       :filter 'emaics--ansi-color-filter))))
 
 
 
@@ -145,11 +172,16 @@
                                   :name "emaics-server"
                                   :buffer emaics--server-buffer
                                   :connection-type 'pipe
+                                  :filter 'emaics--ansi-color-filter
                                   :command `("~/.local/bin/poetry"
                                              "run"
                                              "server.py"
                                              "--api-key"
-                                             ,emaics-api-key))))))
+                                             ,emaics-api-key
+                                             "--server-port"
+                                             ,(number-to-string emaics-server-port)
+                                             "--backend"
+                                             ,emaics-server-backend))))))
     (message "Server already running!")))
 
 
