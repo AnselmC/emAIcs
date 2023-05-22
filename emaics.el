@@ -112,6 +112,22 @@
     prompt))
 
 
+(defun emaics--server-installed-p ()
+  )
+
+;;;###autoload
+(defun emaics-install-server()
+  (interactive)
+  (let ((default-direcotry emaics--pkg-directory)
+        (install-buffer (get-buffer-create "*emAIcs install server*")))
+    (with-current-buffer install-buffer
+      (make-process
+       :name "emaics-install-server"
+       :buffer install-buffer
+       :connection-type 'pipe
+       :command '("make" "install-server")))))
+
+
 
 
 ;;;###autoload
@@ -124,14 +140,16 @@
         (setq emaics--server-buffer (get-buffer-create emaics--server-buffer-name))
         (with-current-buffer emaics--server-buffer
           (erase-buffer)
-          (setq emaics--server (make-process
-                                :name "emaics-server"
-                                :buffer emaics--server-buffer
-                                :connection-type 'pipe
-                                :command `("python"
-                                           ,(expand-file-name "server.py" emaics--pkg-directory)
-                                           "--api-key"
-                                           ,emaics-api-key)))))
+          (let ((default-directory emaics--pkg-directory))
+            (setq emaics--server (make-process
+                                  :name "emaics-server"
+                                  :buffer emaics--server-buffer
+                                  :connection-type 'pipe
+                                  :command `("~/.local/bin/poetry"
+                                             "run"
+                                             "server.py"
+                                             "--api-key"
+                                             ,emaics-api-key))))))
     (message "Server already running!")))
 
 
