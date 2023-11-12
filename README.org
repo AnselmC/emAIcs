@@ -1,0 +1,14 @@
+* emAIcs
+Co-pilot-like coding with Emacs!
+
+--> Work-In-Progress
+
+* TODOs
+** TODO Repo setup
+*** TODO Add github actions
+*** TODO Add testing lib for elisp
+** TODO Add more default prompts
+** TODO Add more/smarter context to prompts
+** TODO Add option to input results directly into source code
+** TODO Add mini-mode map for prompts
+
