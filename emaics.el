@@ -24,14 +24,14 @@
 
 
 ;; Constant variables
-(defconst emaics--client-buffer-name "*emAIcs*")
+(defconst emaics--org-client-buffer-name "*emAIcs*")
 (defconst emaics--server-buffer-name "*emAIcs server*")
 (defconst emaics--pkg-directory (file-name-directory (or load-file-name buffer-file-name)))
 
 ;; Global variables
 (defvar emaics--request-id 0)
 
-(defvar emaics--client-buffer nil)
+(defvar emaics--org-client-buffer nil)
 (defvar emaics--prompt-history '())
 
 (defvar emaics--server nil)
@@ -62,55 +62,53 @@
     (message "Request failed: %S (%S)" err-message err-code)))
 
 (defun emaics--wrap-inside-org-src-block (src-code lang)
+  "Format a string of SRC-CODE into an `org-mode' source block of LANG."
   (format "#+BEGIN_SRC %s \n%s \n#+END_SRC" lang src-code))
 
 
-(defun emaics--send-result-to-buffer (result response-request-id lang)
-  "Display RESULT for RESPONSE-REQUEST-ID from emaics server in dedicated buffer."
-  (let ((buffer (get-buffer-create emaics--client-buffer-name))
+(defun emaics--send-result-to-org-client-buffer (result response-request-id lang)
+  "Add RESULT as src code block in LANG for RESPONSE-REQUEST-ID from emaics server to `emaics--org-client-buffer'."
+  (let ((buffer (get-buffer-create emaics--org-client-buffer-name))
         (formatted-result (emaics--wrap-inside-org-src-block result lang)))
     (with-current-buffer buffer
       (switch-to-buffer-other-window buffer)
       (org-mode)
-      (setq emaics--client-buffer buffer)
+      (setq emaics--org-client-buffer buffer)
       (goto-char (point-max))
       (insert (format "\n\n* Result for request id %s:\n%s" response-request-id formatted-result)))))
 
 
-(defun emaics--handle-success (response lang)
-  "Callback for handling RESPONSE from 200 call from `emaics--send-request-to-server'."
+(defun emaics--handle-success-for-org-client-buffer (response lang)
+  "Handle 200 RESPONSE from emaics server for a request in LANG for the org buffer `emaics--org-client-buffer'."
   (let* ((response-data (request-response-data response))
          (response-request-id (assoc-default 'id response-data))
          (err (assoc-default 'error response-data))
          (result (assoc-default 'result response-data)))
     (if err
         (emaics--handle-error-from-successfull-call err response-request-id))
-    (emaics--send-result-to-buffer result response-request-id lang)))
+    (emaics--send-result-to-org-client-buffer result response-request-id lang)))
 
 
 (defun emaics--increment-request-id ()
-  "Increments local variable REQUEST-ID."
+  "Increments local variable `emaics--request-id'."
   (setq emaics--request-id (1+ emaics--request-id)))
 
-(defun emaics--send-request-to-server (method-name params lang)
-  "Send request to LLM server for METHOD-NAME with PARAMS."
+(defun emaics--send-request-to-server (method-name params handle-success-fn)
+  "Send request to LLM server for METHOD-NAME with PARAMS and pass successful response to HANDLE-SUCCESS-FN."
   (let* ((server-url "http://localhost")
          (data (json-encode `(("method" . ,method-name)
                               ("id" . ,emaics--request-id)
                               ("jsonrpc" . "2.0")
                               ("params" . ,params))))
          (request-url (concat server-url ":" (number-to-string
-                                              (emaics-server-port)))))
+                                              emaics-server-port))))
     (progn
       (emaics--increment-request-id)
       (request request-url
         :parser 'json-read
         :headers '(("Content-Type" . "application/json"))
         :data data
-        :success (cl-function
-                  (lambda (&key response &allow-other-keys)
-                    (emaics--handle-success response lang)))))))
-
+        :success handle-success-fn))))
 
 
 
@@ -127,9 +125,12 @@
     prompt))
 
 
-(defun emaics--server-installed-p ())
 
 (defun emaics--ansi-color-filter (proc string)
+  "Filter STRING from PROC is received from a process.
+
+  Insert the received string into the `process-buffer'
+  with ANSI colors applied, and advance the process mark accordingly."
   (when (buffer-live-p (process-buffer proc))
     (with-current-buffer (process-buffer proc)
       (let ((moving (= (point) (process-mark proc))))
@@ -173,8 +174,9 @@
                                   :buffer emaics--server-buffer
                                   :connection-type 'pipe
                                   :filter 'emaics--ansi-color-filter
-                                  :command `("~/.local/bin/poetry"
+                                  :command `("poetry"
                                              "run"
+                                             "python"
                                              "server.py"
                                              "--api-key"
                                              ,emaics-api-key
@@ -228,8 +230,12 @@
                    (bounds-of-thing-at-point 'line)))
          (buffer (buffer-substring-no-properties (car bounds) (cdr bounds)))
          (lang (emaics--get-language-string-for-major-mode))
-         (prompt (emaics--ask-user-for-prompt)))
-    (emaics--send-request-to-server "execute_prompt" `(("prompt" . ,prompt) ("buffer" . ,buffer)) lang)))
+         (prompt (emaics--ask-user-for-prompt))
+         (handle-success-fn
+          (cl-function
+           (lambda (&key response &allow-other-keys)
+             (emaics--handle-success-for-org-client-buffer response lang)))))
+    (emaics--send-request-to-server "execute_prompt" `(("prompt" . ,prompt) ("buffer" . ,buffer)) handle-success-fn)))
 
 (provide 'emaics)
 ;;; emaics.el ends here
